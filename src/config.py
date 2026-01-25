@@ -1,6 +1,10 @@
 import json
 import os
 from pathlib import Path
+from dotenv import load_dotenv
+
+# Load environment variables from .env file in project root
+load_dotenv()
 
 class Config:
     def __init__(self, config_path='data/config.json'):
@@ -14,18 +18,18 @@ class Config:
     def _load_config(self):
         if not os.path.exists(self.config_path):
             raise FileNotFoundError(
-                f"Config not found in {self.config_path}. Copy config.example.json to {self.config_path} and add your settings."
+                f"Config not found in {self.config_path}."
             )
         with open(self.config_path, 'r') as f:
             return json.load(f)
     
     @property
     def telegram_token(self):
-        return self.data['telegram_bot_token']
+        return os.getenv('TELEGRAM_BOT_TOKEN')
     
     @property
     def api_football_key(self):
-        return self.data['api_football_key']
+        return os.getenv('API_FOOTBALL_KEY')
     
     @property
     def league_id(self):
