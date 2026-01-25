@@ -128,7 +128,7 @@ class FantasyBot:
         """
         Handle the `/sethours` command to change the user's notification window.
 
-        Expects one integer argument (hours). Valid range is 1-168 (1 hour to 7 days).
+        Expects one integer argument (hours). Valid range is 1-24.
 
         Side effects:
             - Updates `self.users[chat_id]['hours_before']` and persists changes.
@@ -141,8 +141,8 @@ class FantasyBot:
         
         try:
             hours = int(context.args[0])
-            if hours < 1 or hours > 168:
-                await update.message.reply_text("Please choose between 1-168 hours")
+            if hours < 1 or hours > 24:
+                await update.message.reply_text("Please choose between 1-24 hours")
                 return
             
             self.users[chat_id]['hours_before'] = hours
