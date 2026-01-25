@@ -17,10 +17,10 @@ TELEGRAM_BOT_TOKEN=your_bot_token_here
 API_FOOTBALL_KEY=your_api_key_here
 ```
 
-2. Adjust settings as needed in `data/config.jsopn`:
+2. Copy `config.example.json` to `data/config.json` and adjust settings as needed. Default values are:
 
 ```bash
-"league_id": "SA", # Serie A
+"league_id": "SA", # Italian Serie A
 "default_hours_before": 24
 ```
 
@@ -38,3 +38,8 @@ Configuration:
 Environment Variables:
 - **Local development**: Create `.env` file with your credentials
 - **Production**: Set `TELEGRAM_BOT_TOKEN` and `API_FOOTBALL_KEY` in your deployment platform's environment configuration
+
+Persistent Storage:
+- User subscription data is stored in `data/users.json`
+- In Docker deployments, the `/app/data` directory is configured as a persistent volume
+- On justrunmy.app, ensure the volume is mounted to preserve user data across deployments

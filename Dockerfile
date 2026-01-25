@@ -13,5 +13,8 @@ COPY src/ ./src/
 COPY config.example.json ./data/config.json
 RUN mkdir -p data
 
+# Declare data directory as a volume for persistent storage
+VOLUME ["/app/data"]
+
 # Run the main application (which starts both bot and scheduler)
 CMD ["python", "-m", "src.main"]
