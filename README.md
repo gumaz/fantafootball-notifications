@@ -42,4 +42,4 @@ Environment Variables:
 Persistent Storage:
 - User subscription data is stored in `data/users.json`
 - In Docker deployments, the `/app/data` directory is configured as a persistent volume
-- On justrunmy.app, ensure the volume is mounted to preserve user data across deployments
+- In production, ensure the volume is mounted to preserve user data across deployments

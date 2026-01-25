@@ -106,6 +106,7 @@ class FantasyBot:
             return
 
         # New user registration
+        print(f"📥 Registering new user: {chat_id}, first_name: {first_name}") 
         self.users[chat_id] = {
             'active': True,
             'hours_before': 24,
@@ -184,6 +185,7 @@ class FantasyBot:
         """
         chat_id = str(update.effective_chat.id)
         if chat_id in self.users:
+            print(f"🛑 Unsubscribing user: {chat_id}")
             self.users[chat_id]['active'] = False
             self.save_users()
             await update.message.reply_text(
