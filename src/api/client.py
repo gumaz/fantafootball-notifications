@@ -59,8 +59,8 @@ class FootballDataAPIClient:
             return {
                 "date": match["utcDate"],
                 "round": match.get("matchday", "Matchday N/A"),
-                "home": match["homeTeam"]["name"],
-                "away": match["awayTeam"]["name"],
+                "home": match["homeTeam"]["shortName"],
+                "away": match["awayTeam"]["shortName"],
                 "status": match["status"]
             }
         except Exception as e:
