@@ -11,14 +11,14 @@ def main():
         
         # Start bot
         bot_process = subprocess.Popen(
-            [sys.executable, '-m', 'src.run_bot'],
+            [sys.executable, '-m', 'src.bot.run'],
             start_new_session=True
         )
         processes.append(bot_process)
         
         # Start scheduler
         scheduler_process = subprocess.Popen(
-            [sys.executable, '-m', 'src.run_scheduler'],
+            [sys.executable, '-m', 'src.scheduler.run'],
             start_new_session=True
         )
         processes.append(scheduler_process)

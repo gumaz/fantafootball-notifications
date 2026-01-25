@@ -4,7 +4,7 @@ import time
 from datetime import datetime, timedelta
 from telegram import Bot
 import asyncio
-from .api_client import FootballDataAPIClient
+from src.api import FootballDataAPIClient
 
 class MatchdayScheduler:
     def __init__(self, config):
