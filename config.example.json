@@ -1,0 +1,7 @@
+{
+    "telegram_bot_token": "YOUR_BOT_TOKEN_HERE",
+    "api_football_key": "YOUR_API_KEY_HERE",
+    "league_id": 135,
+    "season": 2025,
+    "default_hours_before": 24
+}
