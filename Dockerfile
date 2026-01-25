@@ -10,7 +10,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY src/ ./src/
 
 # Copy config and users files
-COPY config.json ./data/config.json
+COPY data/config.json ./data/config.json
 COPY data/users.json ./data/users.json
 
 # Run the main application (which starts both bot and scheduler)

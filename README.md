@@ -12,20 +12,16 @@ Features:
 Quick start:
 1. Create a `.env` file in the project root with your credentials:
 
-```bash
-cp .env.example .env
-```
-
-Edit `.env` and add your credentials:
 ```
 TELEGRAM_BOT_TOKEN=your_bot_token_here
 API_FOOTBALL_KEY=your_api_key_here
 ```
 
-2. Copy the config and adjust settings as needed:
+2. Adjust settings as needed in `data/config.jsopn`:
 
 ```bash
-cp config.example.json data/config.json
+"league_id": "SA", # Serie A
+"default_hours_before": 24
 ```
 
 3. Run the service locally to see it in action:
@@ -40,9 +36,5 @@ Configuration:
 - API currently used is [football-data.org](https://www.football-data.org/). Access may be limited on free plans.
 
 Environment Variables:
-- **Local development**: Create `.env` file from `.env.example` with your credentials
-- **Production (justrunmy.app)**: Set `TELEGRAM_BOT_TOKEN` and `API_FOOTBALL_KEY` in your deployment platform's environment configuration
-
-Notes:
-- For Docker/production deployments, pass environment variables via your deployment platform
-- The `.env` file is git-ignored and never committed to the repository
+- **Local development**: Create `.env` file with your credentials
+- **Production**: Set `TELEGRAM_BOT_TOKEN` and `API_FOOTBALL_KEY` in your deployment platform's environment configuration
