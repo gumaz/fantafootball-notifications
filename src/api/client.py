@@ -1,4 +1,5 @@
 import requests
+from datetime import datetime, timezone
 
 class FootballDataAPIClient:
     def __init__(self, api_key):
@@ -6,17 +7,23 @@ class FootballDataAPIClient:
         self.base_url = "https://api.football-data.org/v4"
         self.headers = {"X-Auth-Token": api_key}
     
-    def get_next_matchday(self, league_id):
+    def get_first_match_of_matchday(self, league_id):
+        """
+        Get the first match of the next upcoming matchday.
+        
+        Finds the next matchday with future matches and returns the first match
+        of that matchday (even if it has already been played). The scheduler will
+        handle notifications based on current time.
+
+        Args:
+            league_id (int): The ID of the league to fetch matches for.
+        """
         endpoint = f"{self.base_url}/competitions/{league_id}/matches"
-        params = {
-            "status": "SCHEDULED"
-        }
         
         try:
             response = requests.get(
                 endpoint, 
-                headers=self.headers, 
-                params=params
+                headers=self.headers
             )
             response.raise_for_status()
             data = response.json()
@@ -28,14 +35,33 @@ class FootballDataAPIClient:
                 print(f"No scheduled matches found. League ID: {league_id}")
                 return None
             
-            matches.sort(key=lambda m: m["utcDate"])
-            first = matches[0]
+            now = datetime.now(timezone.utc)
+            future_matches = [
+                m for m in matches 
+                if datetime.fromisoformat(m["utcDate"].replace('Z', '+00:00')) > now
+            ]
+            
+            if not future_matches:
+                print("No future matches found")
+                return None
+            
+            future_matches.sort(key=lambda m: m["utcDate"])
+            next_matchday = future_matches[0].get("matchday")
+            
+            all_matchday_matches = [
+                m for m in matches 
+                if m.get("matchday") == next_matchday
+            ]
+            all_matchday_matches.sort(key=lambda m: m["utcDate"])
+            
+            match = all_matchday_matches[0]
             
             return {
-                "date": first["utcDate"],
-                "round": first.get("matchday", "Matchday N/A"),
-                "home": first["homeTeam"]["name"],
-                "away": first["awayTeam"]["name"]
+                "date": match["utcDate"],
+                "round": match.get("matchday", "Matchday N/A"),
+                "home": match["homeTeam"]["name"],
+                "away": match["awayTeam"]["name"],
+                "status": match["status"]
             }
         except Exception as e:
             print(f"Error: {e}")
