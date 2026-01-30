@@ -1,7 +1,6 @@
 import subprocess
 import sys
 import signal
-import os
 import logging
 
 logging.basicConfig(
@@ -16,6 +15,15 @@ logging.getLogger('src').setLevel(logging.INFO)
 def main():
     """Run bot and scheduler as separate processes in background. Only for local development."""
     processes = []
+
+    def cleanup(signum, frame):
+        logger.info("Stopping services...")
+        for p in processes:
+            p.terminate()
+        for p in processes:
+            p.wait()
+        logger.info("Stopped.")
+        sys.exit(0)
     
     try:
         logger.info("Starting bot and scheduler...")
@@ -43,18 +51,9 @@ def main():
     except KeyboardInterrupt:
         logger.info("Stopping services...")
         for p in processes:
-            try:
-                os.killpg(os.getpgid(p.pid), signal.SIGTERM)
-            except Exception:
-                try:
-                    p.terminate()
-                except Exception:
-                    pass
+            p.terminate()
         for p in processes:
-            try:
-                p.wait()
-            except Exception:
-                pass
+            p.wait()
         logger.info("Stopped.")
 
 if __name__ == '__main__':

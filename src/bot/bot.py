@@ -204,27 +204,5 @@ class FantasyBot:
         app.add_handler(CommandHandler("sethours", self.set_hours))
         app.add_handler(CommandHandler("status", self.status))
         app.add_handler(CommandHandler("stop", self.stop))
-        # Register a global error handler so unhandled handler exceptions are logged
-        # and the user is notified where possible.
-        try:
-            app.add_error_handler(self.error_handler)
-        except Exception:
-            self.logger.debug("Could not register global error handler")
         self.logger.info("Bot is running...")
         app.run_polling()
-
-    async def error_handler(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        """
-        Global error handler for unhandled exceptions in handlers.
-        Logs the exception and attempts to notify the user.
-        """
-        try:
-            self.logger.exception("Unhandled exception in handler: %s", getattr(context, 'error', None))
-        except Exception:
-            pass
-
-        try:
-            if update and getattr(update, 'message', None):
-                await update.message.reply_text("⚠️ An internal error occurred. The team has been notified.")
-        except Exception:
-            pass
