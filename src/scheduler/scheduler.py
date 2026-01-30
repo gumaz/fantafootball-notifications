@@ -52,7 +52,9 @@ class MatchdayScheduler:
         
         print(f"First match of matchday: {match_info}")
 
-        if match_info["status"] != 'SCHEDULED':
+        # Check if match has actually started or finished
+        # Valid statuses for upcoming matches: SCHEDULED, TIMED, LIVE
+        if match_info["status"] not in ['SCHEDULED', 'TIMED']:
             print(f"Match already started or finished, skipping notifications")
             return
         
