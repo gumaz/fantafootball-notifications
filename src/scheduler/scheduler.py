@@ -87,11 +87,10 @@ class MatchdayScheduler:
     
     def run(self):
         self.check_and_schedule()
-        schedule.every().day.at(self.config.check_time).do(
-            self.check_and_schedule
-        )
-        
-        logger.info(f"Scheduler started at {self.config.check_time}")
+        # Run the check every hour instead of once per day
+        schedule.every().hour.do(self.check_and_schedule)
+
+        logger.info("Scheduler started: checking every hour")
         while True:
             schedule.run_pending()
             time.sleep(60)

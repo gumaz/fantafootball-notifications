@@ -39,6 +39,3 @@ class Config:
     def default_hours_before(self):
         return self.data.get('default_hours_before', 24)
     
-    @property
-    def check_time(self):
-        return self.data.get('check_time', '08:00')
