@@ -25,22 +25,15 @@ def main():
         logger.info("Stopped.")
         sys.exit(0)
     
+    signal.signal(signal.SIGINT, cleanup)
+    signal.signal(signal.SIGTERM, cleanup)
+
     try:
         logger.info("Starting bot and scheduler...")
         
-        # Start bot
-        bot_process = subprocess.Popen(
-            [sys.executable, '-m', 'src.bot.run'],
-            start_new_session=True
-        )
-        processes.append(bot_process)
-        
-        # Start scheduler
-        scheduler_process = subprocess.Popen(
-            [sys.executable, '-m', 'src.scheduler.run'],
-            start_new_session=True
-        )
-        processes.append(scheduler_process)
+        # Start bot and scheduler
+        processes.append(subprocess.Popen([sys.executable, '-m', 'src.bot.run']))
+        processes.append(subprocess.Popen([sys.executable, '-m', 'src.scheduler.run']))
         
         logger.info("Both services running. Press Ctrl+C to stop.")
         
@@ -48,7 +41,8 @@ def main():
         for p in processes:
             p.wait()
             
-    except KeyboardInterrupt:
+    except Exception as e:
+        logger.error(f"Error occurred: {e}")
         logger.info("Stopping services...")
         for p in processes:
             p.terminate()
