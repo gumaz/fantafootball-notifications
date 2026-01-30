@@ -1,6 +1,7 @@
 import subprocess
 import sys
 import signal
+import os
 import logging
 
 logging.basicConfig(
@@ -24,7 +25,7 @@ def main():
             [sys.executable, '-m', 'src.bot.run'],
             start_new_session=True
         )
-        #processes.append(bot_process)
+        processes.append(bot_process)
         
         # Start scheduler
         scheduler_process = subprocess.Popen(
@@ -42,9 +43,18 @@ def main():
     except KeyboardInterrupt:
         logger.info("Stopping services...")
         for p in processes:
-            p.terminate()
+            try:
+                os.killpg(os.getpgid(p.pid), signal.SIGTERM)
+            except Exception:
+                try:
+                    p.terminate()
+                except Exception:
+                    pass
         for p in processes:
-            p.wait()
+            try:
+                p.wait()
+            except Exception:
+                pass
         logger.info("Stopped.")
 
 if __name__ == '__main__':
