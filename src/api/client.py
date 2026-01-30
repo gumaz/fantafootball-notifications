@@ -32,7 +32,7 @@ class FootballDataAPIClient:
             data = response.json()
             
             matches = data.get("matches", [])
-            logger.debug(f"Found {len(matches)} scheduled matches")
+            logger.info(f"Found {len(matches)} scheduled matches")
 
             if not matches:
                 logger.warning(f"No scheduled matches found. League ID: {league_id}")

@@ -43,7 +43,7 @@ class MatchdayScheduler:
             logger.error(f"Error sending notification to {chat_id}: {e}")
     
     def check_and_schedule(self):
-        logger.debug(f"Checking... {datetime.now()}")
+        logger.info(f"Checking... {datetime.now()}")
         
         match_info = self.api_client.get_first_match_of_matchday(
             self.config.league_id
@@ -80,10 +80,10 @@ class MatchdayScheduler:
             now = datetime.now(notification_time.tzinfo)
 
             if now >= notification_time:
-                logger.debug(f"Sending to {chat_id}")
+                logger.info(f"Sending to {chat_id}")
                 asyncio.run(self.send_notification(chat_id, match_info))
             else:
-                logger.debug(f"Not time yet for {chat_id}: {now} < {notification_time}")
+                logger.info(f"Not time yet for {chat_id}: {now} < {notification_time}")
     
     def run(self):
         self.check_and_schedule()
