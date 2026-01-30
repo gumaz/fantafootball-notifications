@@ -6,7 +6,6 @@ from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes
 from datetime import datetime
 
-logger = logging.getLogger(__name__)
 
 class FantasyBot:
     def __init__(self, token, users_file='data/users.json'):
@@ -23,6 +22,8 @@ class FantasyBot:
         """
         self.token = token
         self.users_file = users_file
+        # per-instance logger under "src" so we can enable/disable our package centrally
+        self.logger = logging.getLogger(f"src.{self.__class__.__name__}")
         Path('data').mkdir(exist_ok=True)
         self.users = self.load_users()
     
@@ -47,7 +48,7 @@ class FantasyBot:
                     return {}
                 return json.loads(content)
         except (json.JSONDecodeError, FileNotFoundError) as e:
-            logger.warning(f"Could not load users file: {e}")
+            self.logger.warning(f"Could not load users file: {e}")
             return {}
     
     def save_users(self):
@@ -61,7 +62,7 @@ class FantasyBot:
             with open(self.users_file, 'w') as f:
                 json.dump(self.users, f, indent=2)
         except Exception as e:
-            logger.error(f"Error saving users: {e}")
+            self.logger.error(f"Error saving users: {e}")
     
     async def start(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """
@@ -109,7 +110,7 @@ class FantasyBot:
             return
 
         # New user registration
-        logger.info(f"Registering new user: {chat_id}, first_name: {first_name}")
+        self.logger.info(f"Registering new user: {chat_id}, first_name: {first_name}")
         self.users[chat_id] = {
             'active': True,
             'hours_before': 24,
@@ -203,5 +204,5 @@ class FantasyBot:
         app.add_handler(CommandHandler("sethours", self.set_hours))
         app.add_handler(CommandHandler("status", self.status))
         app.add_handler(CommandHandler("stop", self.stop))
-        logger.info("Bot is running...")
+        self.logger.info("Bot is running...")
         app.run_polling()

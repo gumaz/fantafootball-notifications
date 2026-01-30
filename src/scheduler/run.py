@@ -7,9 +7,12 @@ from src.scheduler import MatchdayScheduler
 from src.config import Config
 
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    level=logging.WARNING,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
 )
+# Enable our package logs at INFO; keep all third-party libs at WARNING by default
+logging.getLogger('src').setLevel(logging.INFO)
 
 def main():
     config = Config()

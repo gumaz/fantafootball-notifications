@@ -2,13 +2,14 @@ import requests
 import logging
 from datetime import datetime, timezone
 
-logger = logging.getLogger(__name__)
 
 class FootballDataAPIClient:
     def __init__(self, api_key):
         self.api_key = api_key
         self.base_url = "https://api.football-data.org/v4"
         self.headers = {"X-Auth-Token": api_key}
+        # per-instance logger under "src" so we can enable/disable our package centrally
+        self.logger = logging.getLogger(f"src.{self.__class__.__name__}")
     
     def get_first_match_of_matchday(self, league_id):
         """
@@ -32,10 +33,10 @@ class FootballDataAPIClient:
             data = response.json()
             
             matches = data.get("matches", [])
-            logger.info(f"Found {len(matches)} scheduled matches")
+            self.logger.info(f"Found {len(matches)} scheduled matches")
 
             if not matches:
-                logger.warning(f"No scheduled matches found. League ID: {league_id}")
+                self.logger.warning(f"No scheduled matches found. League ID: {league_id}")
                 return None
             
             now = datetime.now(timezone.utc)
@@ -45,7 +46,7 @@ class FootballDataAPIClient:
             ]
             
             if not future_matches:
-                logger.warning("No future matches found")
+                self.logger.warning("No future matches found")
                 return None
             
             future_matches.sort(key=lambda m: m["utcDate"])
@@ -67,5 +68,5 @@ class FootballDataAPIClient:
                 "status": match["status"]
             }
         except Exception as e:
-            logger.error(f"Error fetching matches: {e}")
+            self.logger.error(f"Error fetching matches: {e}")
             return None
