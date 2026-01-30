@@ -1,4 +1,5 @@
 import json
+import logging
 from zoneinfo import ZoneInfo
 import schedule
 import time
@@ -6,6 +7,8 @@ from datetime import datetime, timedelta
 from telegram import Bot
 import asyncio
 from src.api import FootballDataAPIClient
+
+logger = logging.getLogger(__name__)
 
 class MatchdayScheduler:
     def __init__(self, config):
@@ -35,27 +38,27 @@ class MatchdayScheduler:
                 f"Don't forget to set your lineup!"
             )
             await self.bot.send_message(chat_id=chat_id, text=message)
-            print(f"✅ Notification sent to {chat_id}")
+            logger.info(f"Notification sent to {chat_id}")
         except Exception as e:
-            print(f"❌ Error sending notification to {chat_id}: {e}")
+            logger.error(f"Error sending notification to {chat_id}: {e}")
     
     def check_and_schedule(self):
-        print(f"Checking... {datetime.now()}")
+        logger.debug(f"Checking... {datetime.now()}")
         
         match_info = self.api_client.get_first_match_of_matchday(
             self.config.league_id
         )
         
         if not match_info:
-            print("No matches found")
+            logger.info("No matches found")
             return
         
-        print(f"First match of matchday: {match_info}")
+        logger.info(f"First match of matchday: {match_info}")
 
         # Check if match has actually started or finished
-        # Valid statuses for upcoming matches: SCHEDULED, TIMED, LIVE
+        # Valid statuses for upcoming matches: SCHEDULED, TIMED
         if match_info["status"] not in ['SCHEDULED', 'TIMED']:
-            print(f"Match already started or finished, skipping notifications")
+            logger.info(f"Match already started or finished, skipping notifications")
             return
         
         match_time = datetime.fromisoformat(
@@ -77,10 +80,10 @@ class MatchdayScheduler:
             now = datetime.now(notification_time.tzinfo)
 
             if now >= notification_time:
-                print(f"Sending to {chat_id}")
+                logger.debug(f"Sending to {chat_id}")
                 asyncio.run(self.send_notification(chat_id, match_info))
             else:
-                print(f"Not time yet for {chat_id}: {now} < {notification_time}")
+                logger.debug(f"Not time yet for {chat_id}: {now} < {notification_time}")
     
     def run(self):
         self.check_and_schedule()
@@ -88,7 +91,7 @@ class MatchdayScheduler:
             self.check_and_schedule
         )
         
-        print(f"Scheduler started at {self.config.check_time}")
+        logger.info(f"Scheduler started at {self.config.check_time}")
         while True:
             schedule.run_pending()
             time.sleep(60)

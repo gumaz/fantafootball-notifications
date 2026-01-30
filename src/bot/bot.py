@@ -1,9 +1,12 @@
 import json
 import os
+import logging
 from pathlib import Path
 from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes
 from datetime import datetime
+
+logger = logging.getLogger(__name__)
 
 class FantasyBot:
     def __init__(self, token, users_file='data/users.json'):
@@ -44,7 +47,7 @@ class FantasyBot:
                     return {}
                 return json.loads(content)
         except (json.JSONDecodeError, FileNotFoundError) as e:
-            print(f"Warning: Could not load users file: {e}")
+            logger.warning(f"Could not load users file: {e}")
             return {}
     
     def save_users(self):
@@ -58,7 +61,7 @@ class FantasyBot:
             with open(self.users_file, 'w') as f:
                 json.dump(self.users, f, indent=2)
         except Exception as e:
-            print(f"Error saving users: {e}")
+            logger.error(f"Error saving users: {e}")
     
     async def start(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """
@@ -106,7 +109,7 @@ class FantasyBot:
             return
 
         # New user registration
-        print(f"📥 Registering new user: {chat_id}, first_name: {first_name}") 
+        logger.info(f"Registering new user: {chat_id}, first_name: {first_name}")
         self.users[chat_id] = {
             'active': True,
             'hours_before': 24,
@@ -185,7 +188,7 @@ class FantasyBot:
         """
         chat_id = str(update.effective_chat.id)
         if chat_id in self.users:
-            print(f"🛑 Unsubscribing user: {chat_id}")
+            logger.info(f"Unsubscribing user: {chat_id}")
             self.users[chat_id]['active'] = False
             self.save_users()
             await update.message.reply_text(
@@ -200,5 +203,5 @@ class FantasyBot:
         app.add_handler(CommandHandler("sethours", self.set_hours))
         app.add_handler(CommandHandler("status", self.status))
         app.add_handler(CommandHandler("stop", self.stop))
-        print("🤖 Bot is running...")
+        logger.info("Bot is running...")
         app.run_polling()

@@ -1,13 +1,20 @@
 import subprocess
 import sys
 import signal
+import logging
+
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 def main():
     """Run bot and scheduler as separate processes in background. Only for local development."""
     processes = []
     
     try:
-        print("🚀 Starting bot and scheduler...")
+        logger.info("Starting bot and scheduler...")
         
         # Start bot
         bot_process = subprocess.Popen(
@@ -23,19 +30,19 @@ def main():
         )
         processes.append(scheduler_process)
         
-        print("✅ Both services running. Press Ctrl+C to stop.")
+        logger.info("Both services running. Press Ctrl+C to stop.")
         
         # Wait for processes
         for p in processes:
             p.wait()
             
     except KeyboardInterrupt:
-        print("\n🛑 Stopping services...")
+        logger.info("Stopping services...")
         for p in processes:
             p.terminate()
         for p in processes:
             p.wait()
-        print("✅ Stopped.")
+        logger.info("Stopped.")
 
 if __name__ == '__main__':
     main()
