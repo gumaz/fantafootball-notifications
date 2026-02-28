@@ -7,6 +7,8 @@ from pathlib import Path
 from telegram import Update
 from telegram.ext import Application, CallbackQueryHandler, CommandHandler, ContextTypes
 
+from .translations import translations as tr
+
 
 class FantasyBot:
     def __init__(self, token, users_file="data/users.json"):
@@ -84,12 +86,12 @@ class FantasyBot:
             - Persists user data to storage via self.save_users().
             - Sends welcome/re-subscription messages to the user.
         """
-        chat_id = str(update.effective_chat.id)
+        chat_id, lang_code = self._get_user_context(update)
         user = update.effective_user
 
         # Block bot accounts from registering
         if user and getattr(user, "is_bot", False):
-            await update.message.reply_text("Bots cannot subscribe to this service.")
+            await update.message.reply_text(tr.get(lang_code, "bot_cannot_subscribe"))
             return
 
         username = user.username if user and getattr(user, "username", None) else ""
@@ -104,12 +106,11 @@ class FantasyBot:
                 self.users[chat_id]["first_name"] = first_name
                 self.users[chat_id]["active"] = True
                 self.users[chat_id]["registration_date"] = datetime.now().isoformat()
+                self.users[chat_id]["lang_code"] = lang_code
                 self.save_users()
-                await update.message.reply_text(
-                    "✅ Welcome back! You've been re-subscribed and will receive notifications again."
-                )
+                await update.message.reply_text(tr.get(lang_code, "welcome_back"))
             else:
-                await update.message.reply_text("You're already subscribed!")
+                await update.message.reply_text(tr.get(lang_code, "already_subscribed"))
             return
 
         # New user registration
@@ -120,16 +121,10 @@ class FantasyBot:
             "username": username,
             "first_name": first_name,
             "registration_date": datetime.now().isoformat(),
+            "lang_code": lang_code,
         }
         self.save_users()
-        await update.message.reply_text(
-            "✅ Welcome to Serie A Fantasy Reminder!\n\n"
-            "You'll receive notifications 24 hours before each matchday.\n\n"
-            "Commands:\n"
-            "/sethours <hours> - Set notification time (e.g., /sethours 48)\n"
-            "/status - Check your settings\n"
-            "/stop - Unsubscribe"
-        )
+        await update.message.reply_text(tr.get(lang_code, "welcome_new_user"))
 
     async def set_hours(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """
@@ -141,26 +136,27 @@ class FantasyBot:
             - Updates `self.users[chat_id]['hours_before']` and persists changes.
             - Sends a confirmation or usage/error message to the user.
         """
-        chat_id = str(update.effective_chat.id)
+        chat_id, lang_code = self._get_user_context(update)
+
         if chat_id not in self.users:
-            await update.message.reply_text("Please use /start first!")
+            await update.message.reply_text(tr.get(lang_code, "use_start_first"))
             return
 
         try:
             hours = int(context.args[0])
             if hours < 1 or hours > 24:
-                await update.message.reply_text("Please choose between 1-24 hours")
+                await update.message.reply_text(
+                    tr.get(lang_code, "invalid_hours_range")
+                )
                 return
 
             self.users[chat_id]["hours_before"] = hours
             self.save_users()
             await update.message.reply_text(
-                f"✅ Notification set to {hours} hours before kickoff"
+                tr.get(lang_code, "notification_set").format(hours=hours)
             )
         except (IndexError, ValueError):
-            await update.message.reply_text(
-                "Usage: /sethours <number>\nExample: /sethours 48"
-            )
+            await update.message.reply_text(tr.get(lang_code, "invalid_hours_format"))
 
     async def status(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """
@@ -169,20 +165,19 @@ class FantasyBot:
         Sends a short summary containing whether the user is active and their
         configured `hours_before` reminder.
         """
-        chat_id = str(update.effective_chat.id)
+        chat_id, lang_code = self._get_user_context(update)
+
         if chat_id in self.users:
             hours = self.users[chat_id]["hours_before"]
             active = self.users[chat_id]["active"]
-            status_text = "Active ✅" if active else "Inactive ❌"
+            status_text = tr.get(
+                lang_code, "status_active" if active else "status_inactive"
+            )
             await update.message.reply_text(
-                f"📊 Your Settings:\n"
-                f"Status: {status_text}\n"
-                f"Reminder: {hours} hours before kickoff"
+                tr.get(lang_code, "status").format(status=status_text, hours=hours)
             )
         else:
-            await update.message.reply_text(
-                "You're not subscribed. Use /start to begin!"
-            )
+            await update.message.reply_text(tr.get(lang_code, "not_subscribed"))
 
     async def stop(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """
@@ -192,16 +187,15 @@ class FantasyBot:
             - Marks the user as inactive (`active = False`) and persists the change.
             - Sends a confirmation message to the user.
         """
-        chat_id = str(update.effective_chat.id)
+        chat_id, lang_code = self._get_user_context(update)
+
         if chat_id in self.users:
             self.logger.info(f"Unsubscribing user: {chat_id}")
             self.users[chat_id]["active"] = False
             self.save_users()
-            await update.message.reply_text(
-                "😔 You've been unsubscribed. Use /start to resubscribe anytime."
-            )
+            await update.message.reply_text(tr.get(lang_code, "unsubscribed"))
         else:
-            await update.message.reply_text("You weren't subscribed.")
+            await update.message.reply_text(tr.get(lang_code, "not_subscribed"))
 
     async def handle_lineup_confirmed(
         self, update: Update, context: ContextTypes.DEFAULT_TYPE
@@ -215,7 +209,7 @@ class FantasyBot:
         query = update.callback_query
         await query.answer()  # dismisses the loading spinner on the button
 
-        chat_id = str(query.message.chat_id)
+        chat_id, lang_code = self._get_user_context(update)
         match_id = query.data.replace("lineup_set:", "")
 
         if chat_id in self.users:
@@ -226,9 +220,7 @@ class FantasyBot:
             await query.edit_message_reply_markup(
                 reply_markup=None
             )  # remove the button
-            await query.message.reply_text(
-                "✅ Got it! No more reminders for this matchday."
-            )
+            await query.message.reply_text(tr.get(lang_code, "no_more_reminders"))
 
     def run(self):
         app = Application.builder().token(self.token).build()
@@ -241,3 +233,8 @@ class FantasyBot:
         )
         self.logger.info("Bot is running...")
         app.run_polling(stop_signals=None)
+
+    def _get_user_context(self, update: Update) -> tuple[str, str]:
+        user = update.effective_user
+        lang_code = (user.language_code if user else None) or "en"
+        return str(update.effective_chat.id), lang_code
