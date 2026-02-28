@@ -1,14 +1,15 @@
 import json
-import os
 import logging
-from pathlib import Path
-from telegram import Update
-from telegram.ext import Application, CommandHandler, ContextTypes
+import os
 from datetime import datetime
+from pathlib import Path
+
+from telegram import Update
+from telegram.ext import Application, CallbackQueryHandler, CommandHandler, ContextTypes
 
 
 class FantasyBot:
-    def __init__(self, token, users_file='data/users.json'):
+    def __init__(self, token, users_file="data/users.json"):
         """
         Initialize the FantasyBot instance.
 
@@ -24,9 +25,9 @@ class FantasyBot:
         self.users_file = users_file
         # per-instance logger under "src" so we can enable/disable our package centrally
         self.logger = logging.getLogger(f"src.{self.__class__.__name__}")
-        Path('data').mkdir(exist_ok=True)
+        Path("data").mkdir(exist_ok=True)
         self.users = self.load_users()
-    
+
     def load_users(self):
         """
         Load users from the JSON persistence file.
@@ -42,7 +43,7 @@ class FantasyBot:
             return {}
 
         try:
-            with open(self.users_file, 'r') as f:
+            with open(self.users_file, "r") as f:
                 content = f.read().strip()
                 if not content:
                     return {}
@@ -50,7 +51,7 @@ class FantasyBot:
         except (json.JSONDecodeError, FileNotFoundError) as e:
             self.logger.warning(f"Could not load users file: {e}")
             return {}
-    
+
     def save_users(self):
         """
         Persist current `self.users` to the configured JSON file.
@@ -59,11 +60,11 @@ class FantasyBot:
             - Writes `self.users` to disk. Prints an error message if write fails.
         """
         try:
-            with open(self.users_file, 'w') as f:
+            with open(self.users_file, "w") as f:
                 json.dump(self.users, f, indent=2)
         except Exception as e:
             self.logger.error(f"Error saving users: {e}")
-    
+
     async def start(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """
         Handle the /start command for new users or re-subscription.
@@ -75,7 +76,7 @@ class FantasyBot:
         Args:
             update (Update): The update object containing user and chat information.
             context (ContextTypes.DEFAULT_TYPE): The context object for the handler.
-            
+
         Side effects:
             - Prevents bot accounts from subscribing by replying with an error message.
             - Creates a new user entry in self.users with default settings if user is new.
@@ -87,20 +88,22 @@ class FantasyBot:
         user = update.effective_user
 
         # Block bot accounts from registering
-        if user and getattr(user, 'is_bot', False):
+        if user and getattr(user, "is_bot", False):
             await update.message.reply_text("Bots cannot subscribe to this service.")
             return
 
-        username = user.username if user and getattr(user, 'username', None) else ""
-        first_name = user.first_name if user and getattr(user, 'first_name', None) else ""
+        username = user.username if user and getattr(user, "username", None) else ""
+        first_name = (
+            user.first_name if user and getattr(user, "first_name", None) else ""
+        )
 
         # If user exists, handle re-subscription when previously inactive
         if chat_id in self.users:
-            if not self.users[chat_id].get('active', True):
-                self.users[chat_id]['username'] = username
-                self.users[chat_id]['first_name'] = first_name
-                self.users[chat_id]['active'] = True
-                self.users[chat_id]['registration_date'] = datetime.now().isoformat()
+            if not self.users[chat_id].get("active", True):
+                self.users[chat_id]["username"] = username
+                self.users[chat_id]["first_name"] = first_name
+                self.users[chat_id]["active"] = True
+                self.users[chat_id]["registration_date"] = datetime.now().isoformat()
                 self.save_users()
                 await update.message.reply_text(
                     "✅ Welcome back! You've been re-subscribed and will receive notifications again."
@@ -112,11 +115,11 @@ class FantasyBot:
         # New user registration
         self.logger.info(f"Registering new user: {chat_id}, first_name: {first_name}")
         self.users[chat_id] = {
-            'active': True,
-            'hours_before': 24,
-            'username': username,
-            'first_name': first_name,
-            'registration_date': datetime.now().isoformat()
+            "active": True,
+            "hours_before": 24,
+            "username": username,
+            "first_name": first_name,
+            "registration_date": datetime.now().isoformat(),
         }
         self.save_users()
         await update.message.reply_text(
@@ -127,7 +130,7 @@ class FantasyBot:
             "/status - Check your settings\n"
             "/stop - Unsubscribe"
         )
-    
+
     async def set_hours(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """
         Handle the `/sethours` command to change the user's notification window.
@@ -142,14 +145,14 @@ class FantasyBot:
         if chat_id not in self.users:
             await update.message.reply_text("Please use /start first!")
             return
-        
+
         try:
             hours = int(context.args[0])
             if hours < 1 or hours > 24:
                 await update.message.reply_text("Please choose between 1-24 hours")
                 return
-            
-            self.users[chat_id]['hours_before'] = hours
+
+            self.users[chat_id]["hours_before"] = hours
             self.save_users()
             await update.message.reply_text(
                 f"✅ Notification set to {hours} hours before kickoff"
@@ -158,7 +161,7 @@ class FantasyBot:
             await update.message.reply_text(
                 "Usage: /sethours <number>\nExample: /sethours 48"
             )
-    
+
     async def status(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """
         Handle the `/status` command to display the user's current settings.
@@ -168,8 +171,8 @@ class FantasyBot:
         """
         chat_id = str(update.effective_chat.id)
         if chat_id in self.users:
-            hours = self.users[chat_id]['hours_before']
-            active = self.users[chat_id]['active']
+            hours = self.users[chat_id]["hours_before"]
+            active = self.users[chat_id]["active"]
             status_text = "Active ✅" if active else "Inactive ❌"
             await update.message.reply_text(
                 f"📊 Your Settings:\n"
@@ -177,8 +180,10 @@ class FantasyBot:
                 f"Reminder: {hours} hours before kickoff"
             )
         else:
-            await update.message.reply_text("You're not subscribed. Use /start to begin!")
-    
+            await update.message.reply_text(
+                "You're not subscribed. Use /start to begin!"
+            )
+
     async def stop(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """
         Handle the `/stop` command to unsubscribe a user.
@@ -190,19 +195,43 @@ class FantasyBot:
         chat_id = str(update.effective_chat.id)
         if chat_id in self.users:
             self.logger.info(f"Unsubscribing user: {chat_id}")
-            self.users[chat_id]['active'] = False
+            self.users[chat_id]["active"] = False
             self.save_users()
             await update.message.reply_text(
                 "😔 You've been unsubscribed. Use /start to resubscribe anytime."
             )
         else:
             await update.message.reply_text("You weren't subscribed.")
-    
+
+    async def handle_lineup_confirmed(
+        self, update: Update, context: ContextTypes.DEFAULT_TYPE
+    ):
+        query = update.callback_query
+        await query.answer()  # dismisses the loading spinner on the button
+
+        chat_id = str(query.message.chat_id)
+        match_id = query.data.replace("lineup_set:", "")
+
+        if chat_id in self.users:
+            confirmed = self.users[chat_id].setdefault("confirmed_matches", [])
+            if match_id not in confirmed:
+                confirmed.append(match_id)
+                self.save_users()
+            await query.edit_message_reply_markup(
+                reply_markup=None
+            )  # remove the button
+            await query.message.reply_text(
+                "✅ Got it! No more reminders for this matchday."
+            )
+
     def run(self):
         app = Application.builder().token(self.token).build()
         app.add_handler(CommandHandler("start", self.start))
         app.add_handler(CommandHandler("sethours", self.set_hours))
         app.add_handler(CommandHandler("status", self.status))
         app.add_handler(CommandHandler("stop", self.stop))
+        app.add_handler(
+            CallbackQueryHandler(self.handle_lineup_confirmed, pattern=r"^lineup_set:")
+        )
         self.logger.info("Bot is running...")
-        app.run_polling()
+        app.run_polling(stop_signals=None)
