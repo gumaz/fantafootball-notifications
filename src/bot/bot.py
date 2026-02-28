@@ -206,6 +206,12 @@ class FantasyBot:
     async def handle_lineup_confirmed(
         self, update: Update, context: ContextTypes.DEFAULT_TYPE
     ):
+        """
+        Handles the confirmation of a lineup.
+
+        This asynchronous method processes the confirmation of a specific lineup when a user interacts with a button.
+        It updates the user's confirmed matches list and removes the button from the message.
+        """
         query = update.callback_query
         await query.answer()  # dismisses the loading spinner on the button
 
