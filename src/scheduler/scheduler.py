@@ -124,7 +124,7 @@ class MatchdayScheduler:
                 continue
 
             # Skip if user already confirmed lineup for this match
-            if match_id in settings.get("confirmed_matches", []):
+            if str(match_id) in settings.get("confirmed_matches", []):
                 self.logger.info(
                     f"Skipping {chat_id}: lineup already confirmed for match {match_id}"
                 )
