@@ -11,6 +11,9 @@ from telegram import Bot, InlineKeyboardButton, InlineKeyboardMarkup
 
 from src.api import FootballDataAPIClient
 
+MAX_RETRIES = 3
+RETRY_BACKOFF_SECONDS = [5, 10, 15]  # wait time before each retry attempt
+
 
 class MatchdayScheduler:
     def __init__(self, config):
@@ -29,35 +32,59 @@ class MatchdayScheduler:
             return {}
 
     async def send_notification(self, chat_id, match_info):
-        try:
-            match_date = datetime.fromisoformat(
-                match_info["date"].replace("Z", "+00:00")
-            ).astimezone(ZoneInfo("Europe/Rome"))
+        """
+        Send a match reminder notification with retry on failure.
 
-            keyboard = InlineKeyboardMarkup(
+        Attempts up to MAX_RETRIES times with exponential backoff between attempts.
+        Logs a warning on each failed attempt and an error if all retries are exhausted.
+        """
+        match_date = datetime.fromisoformat(
+            match_info["date"].replace("Z", "+00:00")
+        ).astimezone(ZoneInfo("Europe/Rome"))
+
+        keyboard = InlineKeyboardMarkup(
+            [
                 [
-                    [
-                        InlineKeyboardButton(
-                            "✅ Lineup set — stop reminders",
-                            callback_data=f"lineup_set:{match_info['id']}",
-                        )
-                    ]
+                    InlineKeyboardButton(
+                        "✅ Lineup set — stop reminders",
+                        callback_data=f"lineup_set:{match_info['id']}",
+                    )
                 ]
-            )
+            ]
+        )
 
-            message = (
-                f"⚽ Serie A Reminder!\n\n"
-                f"🏆 {match_info['round']}\n"
-                f"🆚 {match_info['home']} vs {match_info['away']}\n"
-                f"🕐 Kickoff: {match_date}\n\n"
-                f"Don't forget to set your lineup!"
-            )
-            await self.bot.send_message(
-                chat_id=chat_id, text=message, reply_markup=keyboard
-            )
-            self.logger.info(f"Notification sent to {chat_id}")
-        except Exception as e:
-            self.logger.error(f"Error sending notification to {chat_id}: {e}")
+        message = (
+            f"⚽ Serie A Reminder!\n\n"
+            f"🏆 {match_info['round']}\n"
+            f"🆚 {match_info['home']} vs {match_info['away']}\n"
+            f"🕐 Kickoff: {match_date}\n\n"
+            f"Don't forget to set your lineup!"
+        )
+
+        last_error = None
+        for attempt in range(MAX_RETRIES):
+            try:
+                await self.bot.send_message(
+                    chat_id=chat_id, text=message, reply_markup=keyboard
+                )
+                self.logger.info(
+                    f"Notification sent to {chat_id}"
+                    + (f" (attempt {attempt + 1})" if attempt > 0 else "")
+                )
+                return
+            except Exception as e:
+                last_error = e
+                if attempt < MAX_RETRIES - 1:
+                    wait = RETRY_BACKOFF_SECONDS[attempt]
+                    self.logger.warning(
+                        f"Attempt {attempt + 1}/{MAX_RETRIES} failed for {chat_id}: {e}. "
+                        f"Retrying in {wait}s..."
+                    )
+                    await asyncio.sleep(wait)
+
+        self.logger.error(
+            f"All {MAX_RETRIES} attempts failed for {chat_id}: {last_error}"
+        )
 
     def check_and_schedule(self):
         self.logger.info(f"Checking... {datetime.now()}")
