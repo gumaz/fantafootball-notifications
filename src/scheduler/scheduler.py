@@ -2,7 +2,6 @@ import asyncio
 import json
 import logging
 import time
-from ast import Return
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
@@ -86,7 +85,7 @@ class MatchdayScheduler:
             f"All {MAX_RETRIES} attempts failed for {chat_id}: {last_error}"
         )
 
-    def check_and_schedule(self):
+    async def check_and_schedule(self):
         self.logger.info(f"Checking... {datetime.now()}")
 
         match_info = self.api_client.get_first_match_of_matchday(self.config.league_id)
@@ -118,6 +117,7 @@ class MatchdayScheduler:
             return
 
         users = self.load_users()
+        notifications = []
 
         for chat_id, settings in users.items():
             if not settings.get("active", True):
@@ -136,17 +136,20 @@ class MatchdayScheduler:
             notification_time = match_time - timedelta(hours=hours_before)
 
             if now >= notification_time:
-                self.logger.info(f"Sending to {chat_id}")
-                asyncio.run(self.send_notification(chat_id, match_info))
+                self.logger.info(f"Queuing notification for {chat_id}")
+                notifications.append(self.send_notification(chat_id, match_info))
             else:
                 self.logger.info(
                     f"Not time yet for {chat_id}: {now} < {notification_time}"
                 )
 
+        if notifications:
+            await asyncio.gather(*notifications)
+
     def run(self):
-        self.check_and_schedule()
-        # Run the check every hour instead of once per day
-        schedule.every().hour.do(self.check_and_schedule)
+        asyncio.run(self.check_and_schedule())
+        # Run the check every hour
+        schedule.every().hour.do(lambda: asyncio.run(self.check_and_schedule()))
 
         self.logger.info("Scheduler started: checking every hour")
         while True:
